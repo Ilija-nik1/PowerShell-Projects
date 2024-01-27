@@ -1,38 +1,45 @@
-# Enhanced PowerShell Folder Synchronization Script
-
 function Test-PathOrError {
+    [CmdletBinding()]
     param (
-        [string]$path,
-        [string]$type
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('Container', 'Leaf')]
+        [string]$Type
     )
 
-    if (-not (Test-Path -Path $path -PathType $type)) {
-        Write-Error "$type path '$path' not found or is not a valid $type."
-        return $false
+    if (-not (Test-Path -Path $Path -PathType $Type)) {
+        throw "$Type path '$Path' not found or is not a valid $Type."
     }
 
     return $true
 }
 
 function Sync-Folders {
+    [CmdletBinding()]
     param (
-        [string]$sourcePath,
-        [string]$destinationPath
+        [Parameter(Mandatory = $true)]
+        [string]$SourcePath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$DestinationPath,
+
+        [string]$RobocopyArgs = "/mir /fft /np /ndl /nfl /xd .git"
     )
 
     # Validate source and destination paths
-    if (-not (Test-PathOrError -path $sourcePath -type Container)) { return }
-    if (-not (Test-PathOrError -path $destinationPath -type Container)) { return }
+    Test-PathOrError -Path $SourcePath -Type Container
+    Test-PathOrError -Path $DestinationPath -Type Container
 
-    # Use Robocopy for synchronization
-    $robocopyArgs = "/mir /fft /np /ndl /nfl /xd .git"  # Customize these arguments as needed
-    $robocopyCommand = "robocopy `"$sourcePath`" `"$destinationPath`" $robocopyArgs"
+    # Prepare arguments for Robocopy
+    $arguments = @($SourcePath, $DestinationPath, $RobocopyArgs -split ' ')
 
     # Execute the Robocopy command
-    Invoke-Expression -Command $robocopyCommand
+    Start-Process robocopy -ArgumentList $arguments -NoNewWindow -Wait
 
     Write-Host "Synchronization completed successfully."
 }
 
 # Example usage
-Sync-Folders -sourcePath "C:\Path\To\Your\Source" -destinationPath "C:\Path\To\Your\Destination"
+Sync-Folders -SourcePath "C:\Path\To\Your\Source" -DestinationPath "C:\Path\To\Your\Destination"

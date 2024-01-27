@@ -1,34 +1,31 @@
 # Reset Network Settings Script
 
-function Flush-Dns {
+function Run-Command {
+    param(
+        [string]$command,
+        [string]$successMessage
+    )
+
     try {
-        Write-Host "Flushing DNS..."
-        ipconfig /flushdns
-        Write-Host "DNS Flushed successfully."
+        Write-Host $command
+        Invoke-Expression -Command $command
+        Write-Host $successMessage
     } catch {
-        Write-Host "Error flushing DNS: $_"
+        Write-Host "Error: $_"
     }
+}
+
+function Flush-Dns {
+    Run-Command -command "ipconfig /flushdns" -successMessage "DNS Flushed successfully."
 }
 
 function Clear-ArpCache {
-    try {
-        Write-Host "Clearing ARP cache..."
-        arp -d
-        Write-Host "ARP cache cleared successfully."
-    } catch {
-        Write-Host "Error clearing ARP cache: $_"
-    }
+    Run-Command -command "arp -d" -successMessage "ARP cache cleared successfully."
 }
 
 function Release-Renew-IpConfig {
-    try {
-        Write-Host "Releasing and renewing IP configuration..."
-        ipconfig /release
-        ipconfig /renew
-        Write-Host "IP configuration released and renewed successfully."
-    } catch {
-        Write-Host "Error releasing and renewing IP configuration: $_"
-    }
+    Run-Command -command "ipconfig /release" -successMessage "IP configuration released successfully."
+    Run-Command -command "ipconfig /renew" -successMessage "IP configuration renewed successfully."
 }
 
 function Reset-NetworkSettings {
