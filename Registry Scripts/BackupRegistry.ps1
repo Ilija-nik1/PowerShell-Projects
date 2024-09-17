@@ -1,19 +1,43 @@
 param (
-    [string]$registryPath = "HKLM:\SOFTWARE\YourRegistryPath",
-    [string]$backupFilePath = "C:\Backup\RegistryBackup.reg"
+    [Parameter(Mandatory=$true)]
+    [string]$RegistryPath = "HKLM:\SOFTWARE\YourRegistryPath",
+
+    [Parameter(Mandatory=$true)]
+    [string]$BackupFilePath = "C:\Backup\RegistryBackup.reg"
 )
 
-# Validate the registry path
-if (Test-Path $registryPath -ErrorAction SilentlyContinue) {
-    # Backup the registry key
+function Write-Log {
+    param (
+        [string]$Message,
+        [string]$Level = "INFO"
+    )
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Write-Host "[$timestamp] [$Level] $Message"
+}
+
+# Ensure backup file path directory exists
+$backupDir = Split-Path $BackupFilePath -Parent
+if (-not (Test-Path -Path $backupDir)) {
     try {
-        Export-Item -LiteralPath $registryPath -Destination $backupFilePath -Force -ErrorAction Stop
-        Write-Host "Registry key backed up to $backupFilePath"
-    }
-    catch {
-        Write-Host "Error backing up registry key: $_" -ForegroundColor Red
+        New-Item -Path $backupDir -ItemType Directory -Force | Out-Null
+        Write-Log "Created backup directory at $backupDir"
+    } catch {
+        Write-Log "Failed to create backup directory: $_" "ERROR"
+        exit 1
     }
 }
-else {
-    Write-Host "Error: Registry key not found. Please provide a valid registry path." -ForegroundColor Red
+
+# Validate the registry path
+if (Test-Path -Path $RegistryPath -ErrorAction SilentlyContinue) {
+    try {
+        # Backup the registry key
+        Export-Item -LiteralPath $RegistryPath -Destination $BackupFilePath -Force -ErrorAction Stop
+        Write-Log "Registry key backed up successfully to $BackupFilePath"
+    } catch {
+        Write-Log "Error backing up registry key: $_" "ERROR"
+        exit 1
+    }
+} else {
+    Write-Log "Registry key not found at path: $RegistryPath" "ERROR"
+    exit 1
 }

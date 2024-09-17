@@ -1,18 +1,29 @@
 param (
-    [string]$backupFilePath = "C:\Backup\RegistryBackup.reg"
+    [Parameter(Mandatory=$true)]
+    [string]$BackupFilePath = "C:\Backup\RegistryBackup.reg"
 )
 
-# Validate the backup file
-if (Test-Path $backupFilePath -ErrorAction SilentlyContinue) {
-    # Restore the registry key
-    try {
-        Invoke-Expression -Command "reg.exe import `"$backupFilePath`"" -ErrorAction Stop
-        Write-Host "Registry key restored from $backupFilePath"
-    }
-    catch {
-        Write-Host "Error restoring registry key: $_" -ForegroundColor Red
-    }
+function Write-Log {
+    param (
+        [string]$Message,
+        [string]$Level = "INFO"
+    )
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Write-Host "[$timestamp] [$Level] $Message"
 }
-else {
-    Write-Host "Error: Backup file not found. Please provide a valid backup file path." -ForegroundColor Red
+
+# Validate the backup file path
+if (-not (Test-Path -Path $BackupFilePath -ErrorAction SilentlyContinue)) {
+    Write-Log "Error: Backup file not found at $BackupFilePath. Please provide a valid path." "ERROR"
+    exit 1
+}
+
+# Restore the registry from the backup file
+try {
+    Write-Log "Starting registry restoration from $BackupFilePath"
+    Invoke-Expression -Command "reg.exe import `"$BackupFilePath`"" -ErrorAction Stop
+    Write-Log "Registry key successfully restored from $BackupFilePath"
+} catch {
+    Write-Log "Error restoring registry key: $_" "ERROR"
+    exit 1
 }
