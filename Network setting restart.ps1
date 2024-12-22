@@ -3,14 +3,16 @@
     Reset Network Settings Script.
 
 .DESCRIPTION
-    This script resets network settings by flushing DNS, clearing the ARP cache, and releasing and renewing the IP configuration.
+    This script resets network settings by flushing DNS, clearing the ARP cache, 
+    and releasing and renewing the IP configuration. It includes logging 
+    capabilities and ensures it is run with administrator privileges.
 
 .NOTES
     Author: Your Name
     Date: 2024-06-30
 #>
 
-# Define a function to run a command and handle its output
+# Define a reusable function to run commands and handle output
 function Invoke-CommandWithLogging {
     [CmdletBinding()]
     param (
@@ -28,19 +30,19 @@ function Invoke-CommandWithLogging {
     )
 
     try {
-        Write-Verbose "Executing: $Command"
+        Write-Verbose "Executing command: $Command"
         Invoke-Expression -Command $Command
 
         Write-Host $SuccessMessage -ForegroundColor Green
         if ($LogFile) {
-            Add-Content -Path $LogFile -Value $SuccessMessage
+            Add-Content -Path $LogFile -Value "$(Get-Date) - SUCCESS: $SuccessMessage"
         }
     } catch {
         Write-Host $ErrorMessage -ForegroundColor Red
         Write-Host "Error Details: $_" -ForegroundColor Red
 
         if ($LogFile) {
-            Add-Content -Path $LogFile -Value "$ErrorMessage - Error Details: $_"
+            Add-Content -Path $LogFile -Value "$(Get-Date) - ERROR: $ErrorMessage - Details: $_"
         }
     }
 }
@@ -52,8 +54,8 @@ function Flush-Dns {
         [string]$LogFile = ""
     )
     Invoke-CommandWithLogging -Command "ipconfig /flushdns" `
-                              -SuccessMessage "DNS flushed successfully." `
-                              -ErrorMessage "Failed to flush DNS." `
+                              -SuccessMessage "DNS cache flushed successfully." `
+                              -ErrorMessage "Failed to flush DNS cache." `
                               -LogFile $LogFile
 }
 
@@ -99,7 +101,7 @@ function Reset-NetworkSettings {
     Begin {
         Write-Host "Starting network settings reset..." -ForegroundColor Yellow
         if ($LogFile) {
-            Add-Content -Path $LogFile -Value "Starting network settings reset..."
+            Add-Content -Path $LogFile -Value "$(Get-Date) - INFO: Starting network settings reset..."
         }
     }
 
@@ -120,16 +122,15 @@ function Reset-NetworkSettings {
     End {
         Write-Host "Network settings reset completed." -ForegroundColor Yellow
         if ($LogFile) {
-            Add-Content -Path $LogFile -Value "Network settings reset completed."
+            Add-Content -Path $LogFile -Value "$(Get-Date) - INFO: Network settings reset completed."
         }
     }
 }
 
-# Ensure the script is running with elevated privileges
+# Function to ensure the script runs with administrator privileges
 function Ensure-Admin {
     if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-        Write-Host "This script must be run as an administrator." -ForegroundColor Red
-        # Relaunch the script with elevated privileges
+        Write-Host "This script requires administrator privileges. Restarting with elevated permissions..." -ForegroundColor Red
         Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$($MyInvocation.MyCommand.Path)`"" -Verb RunAs
         exit
     }
